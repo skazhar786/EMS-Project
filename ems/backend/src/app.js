@@ -12,6 +12,7 @@ import profileRoutes from './routes/profileRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import announcementRoutes from './routes/announcementRoutes.js';
+import attendanceRoutes from './routes/attendanceRoutes.js';
 import { UPLOAD_DIR } from './config/paths.js';
 
 const app = express();
@@ -35,6 +36,7 @@ app.use(
       return cb(new Error(`CORS: origin ${origin} is not allowed`));
     },
     credentials: true,
+    exposedHeaders: ['Content-Disposition'], // lets the browser read the CSV filename
   })
 );
 
@@ -96,6 +98,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/announcements', announcementRoutes);
+app.use('/api/attendance', attendanceRoutes);
 // More routers are mounted here in later phases.
 
 // ---- Errors (must be last) ------------------------------------------------

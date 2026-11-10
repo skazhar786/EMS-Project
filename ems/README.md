@@ -1,6 +1,6 @@
 # Employee Management System (MERN)
 
-Status: Phase 5 complete (tasks, notifications, announcements).
+Status: Phase 6A complete (attendance).
 
 ## Backend
 ```bash
@@ -64,7 +64,22 @@ For production hosting with an ephemeral disk, switch storage to a cloud bucket.
 Each assignee has their own status; the task's overall status is derived from them.
 "Overdue" is calculated when read (deadline day passed and not completed), never stored.
 
+## Attendance API
+| Method | Endpoint | Access |
+|---|---|---|
+| POST | /attendance/check-in, /attendance/check-out | Employee (own record; duplicates and check-out without check-in are rejected) |
+| GET | /attendance/today, /attendance/my?month=&year= | Employee (own only) |
+| GET | /attendance?date=&department=&search=&status= | Admin: daily overview |
+| GET | /attendance/employee/:id?month=&year= | Admin: one employee's month |
+| GET | /attendance/report, /attendance/export | Admin: monthly report / CSV |
+| PUT | /attendance/manual | Admin: create or correct one day |
+| DELETE | /attendance/:id | Admin |
+
+Rules are configurable in `backend/.env` (see `.env.example`): OFFICE_TIMEZONE, WORK_START,
+LATE_GRACE_MINUTES, HALF_DAY_HOURS, WEEKLY_OFF_DAYS. "Today" always means the office's calendar day.
+Absent is derived: a past working day with no record. Nothing is stored for days nobody checked in.
+
 ## Frontend routes
 /login, /status, /admin/*, /employee/*
 
-Next: Phase 6 (Attendance and Leave).
+Next: Phase 6B (Leave management).

@@ -14,6 +14,8 @@ import Employees from './pages/admin/Employees';
 import EmployeeDetails from './pages/admin/EmployeeDetails';
 import Departments from './pages/admin/Departments';
 import Tasks from './pages/admin/Tasks';
+import AdminAttendance from './pages/admin/Attendance';
+import MyAttendance from './pages/employee/MyAttendance';
 import AdminNotifications from './pages/admin/Notifications';
 import MyTasks from './pages/employee/MyTasks';
 import EmployeeNotifications from './pages/employee/Notifications';
@@ -45,7 +47,7 @@ export default function App() {
         <Route path="employees/:id" element={<EmployeeDetails />} />
         <Route path="departments" element={<Departments />} />
         <Route path="tasks" element={<Tasks />} />
-        <Route path="attendance" element={<ComingSoon title="Attendance Management" phase="Phase 6" />} />
+        <Route path="attendance" element={<AdminAttendance />} />
         <Route path="leaves" element={<ComingSoon title="Leave Management" phase="Phase 6" />} />
         <Route path="payroll" element={<ComingSoon title="Payroll" phase="Phase 7" />} />
         <Route path="notifications" element={<AdminNotifications />} />
@@ -61,7 +63,7 @@ export default function App() {
         <Route path="dashboard" element={<EmployeeDashboard />} />
         <Route path="profile" element={<EmployeeProfile />} />
         <Route path="tasks" element={<MyTasks />} />
-        <Route path="attendance" element={<ComingSoon title="My Attendance" phase="Phase 6" />} />
+        <Route path="attendance" element={<MyAttendance />} />
         <Route path="leaves" element={<ComingSoon title="My Leaves" phase="Phase 6" />} />
         <Route path="salary" element={<ComingSoon title="My Salary" phase="Phase 7" />} />
         <Route path="notifications" element={<EmployeeNotifications />} />
