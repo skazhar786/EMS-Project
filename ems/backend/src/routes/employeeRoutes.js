@@ -3,11 +3,13 @@ import { body, param } from 'express-validator';
 import {
   listEmployees, listDesignations, listEmployeeOptions, getEmployee,
   createEmployee, updateEmployee, updateEmployeeStatus, deleteEmployee,
+  uploadEmployeeAvatar, removeEmployeeAvatar,
 } from '../controllers/employeeController.js';
 import { EMPLOYEE_STATUS, EMPLOYMENT_TYPES, GENDERS } from '../models/Employee.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { adminOnly } from '../middleware/roleMiddleware.js';
 import { validate } from '../middleware/validate.js';
+import { uploadAvatar } from '../middleware/upload.js';
 
 const router = Router();
 
@@ -57,6 +59,8 @@ router.patch(
   body('status').isIn(EMPLOYEE_STATUS).withMessage('Status must be Active or Inactive'),
   validate, updateEmployeeStatus
 );
+router.put('/:id/avatar', idParam, validate, uploadAvatar, uploadEmployeeAvatar);
+router.delete('/:id/avatar', idParam, validate, removeEmployeeAvatar);
 router.delete('/:id', idParam, validate, deleteEmployee);
 
 export default router;

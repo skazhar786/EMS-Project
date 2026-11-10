@@ -7,7 +7,8 @@ import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import ErrorState from '../../components/ui/ErrorState';
 import StatusBadge from '../../components/ui/StatusBadge';
-import Avatar from '../../components/ui/Avatar';
+import AvatarUploader from '../../components/forms/AvatarUploader';
+import { uploadAvatar, removeAvatar } from '../../services/avatarService';
 import PageLoader from '../../components/common/PageLoader';
 import EmployeeForm from '../../components/forms/EmployeeForm';
 import { formatDate, formatDateTime } from '../../utils/format';
@@ -103,7 +104,12 @@ export default function EmployeeDetails() {
 
       <div className="card flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <Avatar name={employee.fullName} src={employee.profilePicture || undefined} size="lg" />
+          <AvatarUploader
+            name={employee.fullName}
+            src={employee.profilePicture}
+            onUpload={async (file) => { await uploadAvatar(`/employees/${id}`, file); await load(); }}
+            onRemove={async () => { await removeAvatar(`/employees/${id}`); await load(); }}
+          />
           <div>
             <h1 className="text-xl font-semibold text-slate-900">
               {employee.fullName}

@@ -1,6 +1,7 @@
 import { LogOut, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
-import { getInitials } from '../../utils/format';
+import Avatar from '../ui/Avatar';
+import NotificationBell from './NotificationBell';
 
 export default function Topbar({ collapsed, onToggleCollapse, onOpenMobile }) {
   const { user, employee, logout } = useAuth();
@@ -27,13 +28,12 @@ export default function Topbar({ collapsed, onToggleCollapse, onOpenMobile }) {
       </div>
 
       <div className="flex items-center gap-3">
+        <NotificationBell />
         <div className="hidden text-right leading-tight sm:block">
           <p className="text-sm font-medium text-slate-900">{displayName}</p>
           <p className="text-xs capitalize text-slate-500">{user?.role?.toLowerCase()}</p>
         </div>
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700">
-          {getInitials(displayName)}
-        </div>
+        <Avatar name={displayName} src={employee?.profilePicture} size="sm" />
         <button onClick={logout} className="btn-secondary !px-3" title="Log out">
           <LogOut className="h-4 w-4" />
           <span className="hidden sm:inline">Logout</span>

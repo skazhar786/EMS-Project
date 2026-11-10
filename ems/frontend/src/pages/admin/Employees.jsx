@@ -202,7 +202,7 @@ export default function Employees() {
                     <tr key={e._id} className="hover:bg-slate-50">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <Avatar name={e.fullName} />
+                          <Avatar name={e.fullName} src={e.profilePicture} />
                           <div className="min-w-0">
                             <p className="truncate font-medium text-slate-900">
                               {e.fullName}

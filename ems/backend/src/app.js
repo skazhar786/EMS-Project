@@ -8,6 +8,11 @@ import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import authRoutes from './routes/authRoutes.js';
 import departmentRoutes from './routes/departmentRoutes.js';
 import employeeRoutes from './routes/employeeRoutes.js';
+import profileRoutes from './routes/profileRoutes.js';
+import taskRoutes from './routes/taskRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import announcementRoutes from './routes/announcementRoutes.js';
+import { UPLOAD_DIR } from './config/paths.js';
 
 const app = express();
 
@@ -52,6 +57,9 @@ app.use(
   })
 );
 
+// Uploaded profile pictures (random filenames, images only, no directory listing).
+app.use('/uploads', express.static(UPLOAD_DIR, { index: false, maxAge: '1d' }));
+
 // ---- Routes ---------------------------------------------------------------
 app.get('/api/health', (req, res) => {
   const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
@@ -84,6 +92,10 @@ app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/employees', employeeRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/announcements', announcementRoutes);
 // More routers are mounted here in later phases.
 
 // ---- Errors (must be last) ------------------------------------------------

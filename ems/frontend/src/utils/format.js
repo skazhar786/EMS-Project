@@ -14,3 +14,12 @@ export const formatDateTime = (value) => {
 
 export const getInitials = (name = '') =>
   name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join('') || '?';
+
+// Task deadlines are calendar dates stored at UTC midnight, so they must be shown in UTC
+// (otherwise users west of UTC would see the previous day).
+export const formatDateUTC = (value) => {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
+};

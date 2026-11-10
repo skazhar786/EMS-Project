@@ -2,11 +2,15 @@ import mongoose from 'mongoose';
 import Employee, { EMPLOYEE_STATUS, EMPLOYMENT_TYPES } from '../models/Employee.js';
 import User from '../models/User.js';
 import Department from '../models/Department.js';
+import Task from '../models/Task.js';
+import Notification from '../models/Notification.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { escapeRegex } from '../utils/escapeRegex.js';
 import { pick } from '../utils/pick.js';
 import { generateEmployeeId } from '../utils/generateEmployeeId.js';
+import { setEmployeeAvatar, clearEmployeeAvatar, deleteAvatarFile } from '../utils/avatar.js';
+import { discardUpload } from '../middleware/upload.js';
 
 // Fields an admin may set. Deliberately excludes: user, employeeId, leaveBalance, isSample.
 const FIELDS = [
@@ -198,8 +202,43 @@ export const deleteEmployee = asyncHandler(async (req, res) => {
   if (!employee) throw ApiError.notFound('Employee not found');
 
   await Department.updateMany({ manager: employee._id }, { manager: null });
+  await deleteAvatarFile(employee.profilePicture);
+  await Notification.deleteMany({ recipient: employee.user });
+
+  // Remove the employee from their tasks, recompute task status, and drop tasks left without assignees.
+  const tasks = await Task.find({ 'assignees.employee': employee._id });
+  for (const task of tasks) {
+    task.assignees = task.assignees.filter((a) => String(a.employee) !== String(employee._id));
+    task.history = task.history.filter((h) => String(h.employee) !== String(employee._id));
+    if (task.assignees.length === 0) {
+      await task.deleteOne();
+    } else {
+      task.recomputeStatus();
+      await task.save();
+    }
+  }
+
   await User.deleteOne({ _id: employee.user });
   await employee.deleteOne();
 
   res.json({ success: true, message: `Employee ${employee.employeeId} deleted` });
+});
+
+// PUT /api/employees/:id/avatar
+export const uploadEmployeeAvatar = asyncHandler(async (req, res) => {
+  const employee = await Employee.findById(req.params.id);
+  if (!employee) {
+    await discardUpload(req.file);
+    throw ApiError.notFound('Employee not found');
+  }
+  await setEmployeeAvatar(employee, req.file);
+  res.json({ success: true, message: 'Profile picture updated', data: await loadEmployee(employee._id) });
+});
+
+// DELETE /api/employees/:id/avatar
+export const removeEmployeeAvatar = asyncHandler(async (req, res) => {
+  const employee = await Employee.findById(req.params.id);
+  if (!employee) throw ApiError.notFound('Employee not found');
+  await clearEmployeeAvatar(employee);
+  res.json({ success: true, message: 'Profile picture removed', data: await loadEmployee(employee._id) });
 });

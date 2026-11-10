@@ -1,6 +1,6 @@
 # Employee Management System (MERN)
 
-Status: Phase 4 complete (UI kit, Departments, Employees).
+Status: Phase 5 complete (tasks, notifications, announcements).
 
 ## Backend
 ```bash
@@ -40,7 +40,31 @@ npm run dev
 | GET/PUT/DELETE | /employees/:id | |
 | PATCH | /employees/:id/status | Active / Inactive (also enables/disables login) |
 
+## Profile API
+| Method | Endpoint | Access |
+|---|---|---|
+| GET / PUT | /profile | Employee (own record only; editable: phone, gender, date of birth, address) |
+| PUT / DELETE | /profile/avatar | Employee (multipart field `avatar`, JPG/PNG/WebP, max 2 MB) |
+| PUT / DELETE | /employees/:id/avatar | Admin |
+
+Uploaded images are stored in `backend/uploads/avatars` (git-ignored) and served from `/uploads/...`.
+For production hosting with an ephemeral disk, switch storage to a cloud bucket.
+
+## Task, Notification & Announcement API
+| Method | Endpoint | Access |
+|---|---|---|
+| GET / POST | /tasks | Admin (filters: search, employee, priority, status incl. Overdue; sort; pagination) |
+| PUT / DELETE | /tasks/:id | Admin |
+| GET | /tasks/my | Employee (only tasks assigned to them) |
+| PATCH | /tasks/:id/status | Employee (changes only their own progress) |
+| GET | /notifications, /notifications/unread-count | Any user (own only) |
+| PATCH | /notifications/:id/read, /notifications/read-all | Any user (own only) |
+| GET / POST / DELETE | /announcements | Admin (optionally limited to one department) |
+
+Each assignee has their own status; the task's overall status is derived from them.
+"Overdue" is calculated when read (deadline day passed and not completed), never stored.
+
 ## Frontend routes
 /login, /status, /admin/*, /employee/*
 
-Next: Phase 4B (profile pictures, employee self-edit profile), then Phase 5 (Tasks + Notifications).
+Next: Phase 6 (Attendance and Leave).
