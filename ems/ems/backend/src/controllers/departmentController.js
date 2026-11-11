@@ -3,6 +3,7 @@ import Department from '../models/Department.js';
 import Employee from '../models/Employee.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { logActivity } from '../services/activityService.js';
 import { escapeRegex } from '../utils/escapeRegex.js';
 
 const assertValidManager = async (managerId) => {
@@ -53,6 +54,7 @@ export const createDepartment = asyncHandler(async (req, res) => {
   const department = await Department.create({ name, description, manager: managerId });
   await department.populate('manager', 'fullName employeeId');
 
+  await logActivity(req, { action: 'DEPARTMENT_CREATED', entityType: 'Department', entityId: department._id, description: `Created department ${department.name}` });
   res.status(201).json({ success: true, message: 'Department created', data: department });
 });
 
@@ -69,6 +71,7 @@ export const updateDepartment = asyncHandler(async (req, res) => {
   await department.save();
   await department.populate('manager', 'fullName employeeId');
 
+  await logActivity(req, { action: 'DEPARTMENT_UPDATED', entityType: 'Department', entityId: department._id, description: `Updated department ${department.name}` });
   res.json({ success: true, message: 'Department updated', data: department });
 });
 
@@ -85,5 +88,6 @@ export const deleteDepartment = asyncHandler(async (req, res) => {
   }
 
   await department.deleteOne();
+  await logActivity(req, { action: 'DEPARTMENT_DELETED', entityType: 'Department', entityId: department._id, description: `Deleted department ${department.name}` });
   res.json({ success: true, message: 'Department deleted' });
 });

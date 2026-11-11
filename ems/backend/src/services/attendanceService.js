@@ -110,6 +110,12 @@ export const monthRange = (year, month) => ({
   end: new Date(Date.UTC(year, month, 1)),
 });
 
+export const monthKeys = (year, month) => {
+  const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const mm = String(month).padStart(2, '0');
+  return { startKey: `${year}-${mm}-01`, endKey: `${year}-${mm}-${String(last).padStart(2, '0')}` };
+};
+
 export const parseMonthYear = (query, todayKey) => {
   const [ty, tm] = todayKey.split('-').map(Number);
   const month = parseInt(query.month, 10);
@@ -122,14 +128,15 @@ export const parseMonthYear = (query, todayKey) => {
 
 // Day-by-day view of one employee's month, built from REAL records only.
 //  - a recorded day shows its recorded status
+//  - an unrecorded working day on APPROVED leave is "On leave" (not Absent)
 //  - an unrecorded working day in the past is Absent
 //  - today with no record is "Not checked in" (the day is not over yet)
 //  - weekly-off days without a record are "Weekly off"; days before joining and future days are skipped
-export const buildMonth = ({ year, month, records, joiningKey, todayKey, cfg }) => {
+export const buildMonth = ({ year, month, records, joiningKey, todayKey, cfg, leaveKeys = new Set() }) => {
   const byDate = new Map(records.map((r) => [dateToKey(r.date), r]));
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const days = [];
-  const summary = { workingDays: 0, present: 0, late: 0, halfDay: 0, absent: 0, totalHours: 0 };
+  const summary = { workingDays: 0, present: 0, late: 0, halfDay: 0, absent: 0, leave: 0, totalHours: 0 };
 
   for (let d = 1; d <= daysInMonth; d += 1) {
     const key = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -141,6 +148,7 @@ export const buildMonth = ({ year, month, records, joiningKey, todayKey, cfg }) 
     let status;
     if (rec) status = rec.status;
     else if (isOff) status = 'Weekly off';
+    else if (leaveKeys.has(key)) status = 'On leave';
     else status = key === todayKey ? 'Not checked in' : 'Absent';
 
     if (!isOff) summary.workingDays += 1;
@@ -148,6 +156,7 @@ export const buildMonth = ({ year, month, records, joiningKey, todayKey, cfg }) 
     if (status === 'Late') summary.late += 1;
     if (status === 'Half-day') summary.halfDay += 1;
     if (status === 'Absent') summary.absent += 1;
+    if (status === 'On leave') summary.leave += 1;
     if (rec) summary.totalHours += rec.workHours || 0;
 
     days.push({

@@ -13,11 +13,12 @@ export function StatCard({ label, value, tone = 'text-slate-900' }) {
 
 export function SummaryCards({ summary }) {
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
       <StatCard label="Present days" value={summary.present} tone="text-emerald-600" />
       <StatCard label="Absent days" value={summary.absent} tone="text-red-600" />
       <StatCard label="Late arrivals" value={summary.late} tone="text-amber-600" />
       <StatCard label="Half days" value={summary.halfDay} tone="text-orange-600" />
+      <StatCard label="Leave days" value={summary.leave ?? 0} tone="text-blue-600" />
       <StatCard label="Hours worked" value={Number(summary.totalHours).toFixed(1)} />
     </div>
   );

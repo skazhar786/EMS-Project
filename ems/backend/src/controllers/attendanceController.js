@@ -3,12 +3,14 @@ import Attendance, { ATTENDANCE_STATUSES } from '../models/Attendance.js';
 import Employee from '../models/Employee.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { logActivity } from '../services/activityService.js';
 import { escapeRegex } from '../utils/escapeRegex.js';
 import { toCsv } from '../utils/csv.js';
 import {
   getConfig, publicRules, dateKey, isValidDateKey, keyToDate, dateToKey, zonedToUtc, checkInStatus,
-  computeHours, toClientRecord, monthRange, parseMonthYear, buildMonth,
+  computeHours, toClientRecord, monthRange, parseMonthYear, buildMonth, monthKeys,
 } from '../services/attendanceService.js';
+import { getLeaveKeysByEmployee } from '../services/leaveService.js';
 
 const str = (v) => (typeof v === 'string' ? v.trim() : '');
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -98,8 +100,11 @@ export const getMyAttendance = asyncHandler(async (req, res) => {
   const todayKey = dateKey(new Date(), cfg.timeZone);
   const { month, year } = parseMonthYear(req.query, todayKey);
   const records = await monthRecords([req.employee._id], year, month);
+  const { startKey, endKey } = monthKeys(year, month);
+  const leaveMap = await getLeaveKeysByEmployee([req.employee._id], startKey, endKey);
   const { days, summary } = buildMonth({
     year, month, records, joiningKey: dateToKey(req.employee.joiningDate), todayKey, cfg,
+    leaveKeys: leaveMap.get(String(req.employee._id)),
   });
   res.json({ success: true, data: { month, year, days, summary, rules: publicRules(cfg) } });
 });
@@ -126,6 +131,7 @@ export const getDailyOverview = asyncHandler(async (req, res) => {
     employee: mongoose.trusted({ $in: employees.map((e) => e._id) }),
   }).lean();
   const byEmployee = new Map(records.map((r) => [String(r.employee), r]));
+  const leaveMap = await getLeaveKeysByEmployee(employees.map((e) => e._id), key, key);
 
   const isOff = cfg.weeklyOff.includes(new Date(`${key}T00:00:00Z`).getUTCDay());
   let rows = employees
@@ -135,6 +141,7 @@ export const getDailyOverview = asyncHandler(async (req, res) => {
       let status;
       if (rec) status = rec.status;
       else if (isOff) status = 'Weekly off';
+      else if (leaveMap.get(String(e._id))?.has(key)) status = 'On leave';
       else if (key < todayKey) status = 'Absent';
       else status = key === todayKey ? 'Not checked in' : 'Upcoming';
       return {
@@ -149,12 +156,13 @@ export const getDailyOverview = asyncHandler(async (req, res) => {
       };
     });
 
-  const counts = { total: rows.length, present: 0, late: 0, halfDay: 0, absent: 0, notCheckedIn: 0 };
+  const counts = { total: rows.length, present: 0, late: 0, halfDay: 0, absent: 0, onLeave: 0, notCheckedIn: 0 };
   rows.forEach((r) => {
     if (r.status === 'Present') counts.present += 1;
     if (r.status === 'Late') counts.late += 1;
     if (r.status === 'Half-day') counts.halfDay += 1;
     if (r.status === 'Absent') counts.absent += 1;
+    if (r.status === 'On leave') counts.onLeave += 1;
     if (r.status === 'Not checked in') counts.notCheckedIn += 1;
   });
 
@@ -182,7 +190,12 @@ export const getEmployeeAttendance = asyncHandler(async (req, res) => {
   const todayKey = dateKey(new Date(), cfg.timeZone);
   const { month, year } = parseMonthYear(req.query, todayKey);
   const records = await monthRecords([employee._id], year, month);
-  const { days, summary } = buildMonth({ year, month, records, joiningKey: dateToKey(employee.joiningDate), todayKey, cfg });
+  const { startKey, endKey } = monthKeys(year, month);
+  const leaveMap = await getLeaveKeysByEmployee([employee._id], startKey, endKey);
+  const { days, summary } = buildMonth({
+    year, month, records, joiningKey: dateToKey(employee.joiningDate), todayKey, cfg,
+    leaveKeys: leaveMap.get(String(employee._id)),
+  });
 
   res.json({ success: true, data: { employee, month, year, days, summary, rules: publicRules(cfg) } });
 });
@@ -201,6 +214,8 @@ const buildReport = async (query) => {
     .lean();
 
   const records = await monthRecords(employees.map((e) => e._id), year, month);
+  const { startKey, endKey } = monthKeys(year, month);
+  const leaveMap = await getLeaveKeysByEmployee(employees.map((e) => e._id), startKey, endKey);
   const grouped = new Map();
   records.forEach((r) => {
     const k = String(r.employee);
@@ -211,6 +226,7 @@ const buildReport = async (query) => {
   const rows = employees.map((e) => {
     const { summary } = buildMonth({
       year, month, records: grouped.get(String(e._id)) || [], joiningKey: dateToKey(e.joiningDate), todayKey, cfg,
+      leaveKeys: leaveMap.get(String(e._id)),
     });
     return {
       employee: { _id: e._id, employeeId: e.employeeId, fullName: e.fullName, department: e.department },
@@ -230,10 +246,10 @@ export const getReport = asyncHandler(async (req, res) => {
 export const exportReport = asyncHandler(async (req, res) => {
   const { month, year, rows } = await buildReport(req.query);
   const csv = toCsv(
-    ['Employee ID', 'Name', 'Department', 'Working days', 'Present days', 'Late arrivals', 'Half days', 'Absent days', 'Total hours'],
+    ['Employee ID', 'Name', 'Department', 'Working days', 'Present days', 'Late arrivals', 'Half days', 'Absent days', 'Leave days', 'Total hours'],
     rows.map((r) => [
       r.employee.employeeId, r.employee.fullName, r.employee.department?.name || '',
-      r.workingDays, r.present, r.late, r.halfDay, r.absent, r.totalHours,
+      r.workingDays, r.present, r.late, r.halfDay, r.absent, r.leave, r.totalHours,
     ])
   );
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -248,7 +264,7 @@ export const markManually = asyncHandler(async (req, res) => {
   const todayKey = dateKey(new Date(), cfg.timeZone);
 
   if (date > todayKey) throw ApiError.badRequest('Attendance cannot be marked for a future date');
-  const employee = await Employee.findById(employeeId).select('joiningDate');
+  const employee = await Employee.findById(employeeId).select('fullName joiningDate');
   if (!employee) throw ApiError.notFound('Employee not found');
   if (date < dateToKey(employee.joiningDate)) throw ApiError.badRequest('That date is before the employee joined');
 
@@ -275,6 +291,7 @@ export const markManually = asyncHandler(async (req, res) => {
   record.editedBy = req.user._id;
   await record.save();
 
+  await logActivity(req, { action: 'ATTENDANCE_MARKED', entityType: 'Attendance', entityId: record._id, description: `Marked ${employee.fullName} as ${status} for ${date}` });
   res.json({ success: true, message: 'Attendance saved', data: toClientRecord(record, cfg) });
 });
 
@@ -283,6 +300,7 @@ export const deleteRecord = asyncHandler(async (req, res) => {
   const record = await Attendance.findById(req.params.id);
   if (!record) throw ApiError.notFound('Attendance record not found');
   await record.deleteOne();
+  await logActivity(req, { action: 'ATTENDANCE_REMOVED', entityType: 'Attendance', entityId: record._id, description: `Removed an attendance record for ${dateToKey(record.date)}` });
   res.json({ success: true, message: 'Attendance record removed' });
 });
 

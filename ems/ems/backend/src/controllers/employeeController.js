@@ -2,8 +2,15 @@ import mongoose from 'mongoose';
 import Employee, { EMPLOYEE_STATUS, EMPLOYMENT_TYPES } from '../models/Employee.js';
 import User from '../models/User.js';
 import Department from '../models/Department.js';
+import Task from '../models/Task.js';
+import Notification from '../models/Notification.js';
+import Attendance from '../models/Attendance.js';
+import Leave from '../models/Leave.js';
+import SalaryStructure from '../models/SalaryStructure.js';
+import SalaryPayment from '../models/SalaryPayment.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { logActivity } from '../services/activityService.js';
 import { escapeRegex } from '../utils/escapeRegex.js';
 import { pick } from '../utils/pick.js';
 import { generateEmployeeId } from '../utils/generateEmployeeId.js';
@@ -144,6 +151,7 @@ export const createEmployee = asyncHandler(async (req, res) => {
     throw err;
   }
 
+  await logActivity(req, { action: 'EMPLOYEE_CREATED', entityType: 'Employee', entityId: employee._id, description: `Added employee ${employee.fullName} (${employee.employeeId})` });
   res.status(201).json({
     success: true,
     message: `Employee ${employee.employeeId} created`,
@@ -174,6 +182,7 @@ export const updateEmployee = asyncHandler(async (req, res) => {
   await employee.save();
   await user.save();
 
+  await logActivity(req, { action: 'EMPLOYEE_UPDATED', entityType: 'Employee', entityId: employee._id, description: `Updated employee ${employee.fullName} (${employee.employeeId})` });
   res.json({ success: true, message: 'Employee updated', data: await loadEmployee(employee._id) });
 });
 
@@ -187,6 +196,7 @@ export const updateEmployeeStatus = asyncHandler(async (req, res) => {
   await employee.save();
   await User.updateOne({ _id: employee.user }, { isActive: status === 'Active' });
 
+  await logActivity(req, { action: 'EMPLOYEE_STATUS', entityType: 'Employee', entityId: employee._id, description: `${status === 'Active' ? 'Activated' : 'Deactivated'} employee ${employee.fullName} (${employee.employeeId})` });
   res.json({
     success: true,
     message: `Employee ${status === 'Active' ? 'activated' : 'deactivated'}`,
@@ -201,9 +211,29 @@ export const deleteEmployee = asyncHandler(async (req, res) => {
 
   await Department.updateMany({ manager: employee._id }, { manager: null });
   await deleteAvatarFile(employee.profilePicture);
+  await Notification.deleteMany({ recipient: employee.user });
+  await Attendance.deleteMany({ employee: employee._id });
+  await Leave.deleteMany({ employee: employee._id });
+  await SalaryStructure.deleteMany({ employee: employee._id });
+  await SalaryPayment.deleteMany({ employee: employee._id });
+
+  // Remove the employee from their tasks, recompute task status, and drop tasks left without assignees.
+  const tasks = await Task.find({ 'assignees.employee': employee._id });
+  for (const task of tasks) {
+    task.assignees = task.assignees.filter((a) => String(a.employee) !== String(employee._id));
+    task.history = task.history.filter((h) => String(h.employee) !== String(employee._id));
+    if (task.assignees.length === 0) {
+      await task.deleteOne();
+    } else {
+      task.recomputeStatus();
+      await task.save();
+    }
+  }
+
   await User.deleteOne({ _id: employee.user });
   await employee.deleteOne();
 
+  await logActivity(req, { action: 'EMPLOYEE_DELETED', entityType: 'Employee', entityId: employee._id, description: `Deleted employee ${employee.fullName} (${employee.employeeId})` });
   res.json({ success: true, message: `Employee ${employee.employeeId} deleted` });
 });
 

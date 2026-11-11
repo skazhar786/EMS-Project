@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, Building2, ListChecks, CalendarCheck,
-  CalendarOff, Wallet, Bell, Settings,
+  CalendarOff, Wallet, Bell, ScrollText, Settings,
 } from 'lucide-react';
 import DashboardShell from '../components/common/DashboardShell';
 
@@ -13,6 +13,7 @@ const navItems = [
   { to: '/admin/leaves', label: 'Leaves', icon: CalendarOff },
   { to: '/admin/payroll', label: 'Payroll', icon: Wallet },
   { to: '/admin/notifications', label: 'Notifications', icon: Bell },
+  { to: '/admin/activity', label: 'Activity log', icon: ScrollText },
   { to: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 

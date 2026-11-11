@@ -4,6 +4,7 @@ import Employee from '../models/Employee.js';
 import Department from '../models/Department.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { logActivity } from '../services/activityService.js';
 import { notifyUsers } from '../services/notificationService.js';
 
 // ---------------------------------------------------- own notifications
@@ -94,6 +95,7 @@ export const createAnnouncement = asyncHandler(async (req, res) => {
   );
 
   await announcement.populate('department', 'name');
+  await logActivity(req, { action: 'ANNOUNCEMENT_SENT', entityType: 'Announcement', entityId: announcement._id, description: `Sent announcement "${title}" to ${recipients.length} employee(s)` });
   res.status(201).json({
     success: true,
     message: `Announcement sent to ${recipients.length} employee${recipients.length > 1 ? 's' : ''}`,
@@ -107,5 +109,6 @@ export const deleteAnnouncement = asyncHandler(async (req, res) => {
   if (!announcement) throw ApiError.notFound('Announcement not found');
   await Notification.deleteMany({ announcement: announcement._id });
   await announcement.deleteOne();
+  await logActivity(req, { action: 'ANNOUNCEMENT_DELETED', entityType: 'Announcement', entityId: announcement._id, description: `Deleted announcement "${announcement.title}"` });
   res.json({ success: true, message: 'Announcement deleted' });
 });

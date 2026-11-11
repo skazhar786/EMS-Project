@@ -100,12 +100,13 @@ function DailyOverview({ departments }) {
   return (
     <div className="space-y-6">
       {counts && (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:grid-cols-7">
           <StatCard label="Employees" value={counts.total} />
           <StatCard label="Present" value={counts.present} tone="text-emerald-600" />
           <StatCard label="Late" value={counts.late} tone="text-amber-600" />
           <StatCard label="Half-day" value={counts.halfDay} tone="text-orange-600" />
           <StatCard label="Absent" value={counts.absent} tone="text-red-600" />
+          <StatCard label="On leave" value={counts.onLeave} tone="text-blue-600" />
           <StatCard label="Not checked in" value={counts.notCheckedIn} />
         </div>
       )}
@@ -117,7 +118,7 @@ function DailyOverview({ departments }) {
           <DepartmentSelect departments={departments} value={department} onChange={setDepartment} />
           <select className="input lg:w-44" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Filter by status">
             <option value="">All statuses</option>
-            {['Present', 'Late', 'Half-day', 'Absent', 'Not checked in'].map((s) => <option key={s} value={s}>{s}</option>)}
+            {['Present', 'Late', 'Half-day', 'Absent', 'On leave', 'Not checked in'].map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
           {hasFilters && <button className="btn-secondary" onClick={clearFilters}>Clear</button>}
         </div>

@@ -3,6 +3,7 @@ import Task, { TASK_STATUSES } from '../models/Task.js';
 import Employee from '../models/Employee.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { logActivity } from '../services/activityService.js';
 import { escapeRegex } from '../utils/escapeRegex.js';
 import { notifyEmployees, notifyUsers } from '../services/notificationService.js';
 
@@ -117,6 +118,7 @@ export const createTask = asyncHandler(async (req, res) => {
   });
 
   await task.populate(POPULATE_ADMIN);
+  await logActivity(req, { action: 'TASK_CREATED', entityType: 'Task', entityId: task._id, description: `Assigned task "${task.title}" to ${task.assignees.length} employee(s)` });
   res.status(201).json({ success: true, message: 'Task created and assigned', data: toAdminShape(task) });
 });
 
@@ -170,6 +172,7 @@ export const updateTask = asyncHandler(async (req, res) => {
   }
 
   await task.populate(POPULATE_ADMIN);
+  await logActivity(req, { action: 'TASK_UPDATED', entityType: 'Task', entityId: task._id, description: `Updated task "${task.title}"` });
   res.json({ success: true, message: 'Task updated', data: toAdminShape(task) });
 });
 
@@ -178,6 +181,7 @@ export const deleteTask = asyncHandler(async (req, res) => {
   const task = await Task.findById(req.params.id);
   if (!task) throw ApiError.notFound('Task not found');
   await task.deleteOne();
+  await logActivity(req, { action: 'TASK_DELETED', entityType: 'Task', entityId: task._id, description: `Deleted task "${task.title}"` });
   res.json({ success: true, message: 'Task deleted' });
 });
 
@@ -205,6 +209,7 @@ export const updateMyTaskStatus = asyncHandler(async (req, res) => {
     await task.save();
 
     if (status === 'Completed') {
+      await logActivity(req, { action: 'TASK_COMPLETED', entityType: 'Task', entityId: task._id, description: `Completed task "${task.title}"` });
       await notifyUsers([task.assignedBy], {
         type: 'TASK_UPDATED',
         title: 'Task completed',

@@ -11,6 +11,11 @@ const STYLES = {
   Rejected: 'bg-red-50 text-red-700',
   Overdue: 'bg-red-50 text-red-700',
   Absent: 'bg-red-50 text-red-700',
+  'Half-day': 'bg-orange-50 text-orange-700',
+  'Not checked in': 'bg-slate-100 text-slate-600',
+  'On leave': 'bg-blue-50 text-blue-700',
+  'Weekly off': 'bg-slate-100 text-slate-500',
+  Upcoming: 'bg-slate-100 text-slate-500',
 };
 
 export default function StatusBadge({ status }) {

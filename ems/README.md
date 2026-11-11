@@ -1,6 +1,6 @@
 # Employee Management System (MERN)
 
-Status: Phase 6A complete (attendance).
+Status: Phase 8 complete (dashboards, analytics, activity log).
 
 ## Backend
 ```bash
@@ -79,7 +79,52 @@ Rules are configurable in `backend/.env` (see `.env.example`): OFFICE_TIMEZONE, 
 LATE_GRACE_MINUTES, HALF_DAY_HOURS, WEEKLY_OFF_DAYS. "Today" always means the office's calendar day.
 Absent is derived: a past working day with no record. Nothing is stored for days nobody checked in.
 
+## Leave API
+| Method | Endpoint | Access |
+|---|---|---|
+| POST | /leaves | Employee: apply (type, startDate, endDate, reason) |
+| GET | /leaves/my, /leaves/balance | Employee (own only) |
+| DELETE | /leaves/:id | Employee: withdraw own PENDING request |
+| GET | /leaves | Admin: filters status, type, department, employee, from, to |
+| GET | /leaves/employee/:id | Admin: one employee's balance and history |
+| PATCH | /leaves/:id/approve, /leaves/:id/reject | Admin (reject requires remarks) |
+| PUT | /leaves/balance/:employeeId | Admin: set casual / sick / earned balances |
+
+Rules: end date >= start date; max 90 days per request; no overlap with another Pending or Approved
+request; weekly-off days are not counted; only APPROVED leave reduces the balance (atomically, never below
+zero). Approved leave days appear as "On leave" in attendance instead of "Absent".
+
+## Payroll API
+| Method | Endpoint | Access |
+|---|---|---|
+| GET | /payroll/defaults | Admin (HRA / PF auto-fill percentages from .env) |
+| GET | /payroll/structures | Admin (employees with their structure; filters: search, department, configured) |
+| GET / PUT | /payroll/structures/:employeeId | Admin (create or update; employee is notified) |
+| POST | /payroll/generate | Admin: `{ month, year, department? }`, creates Pending payslips (never duplicates) |
+| GET | /payroll/payments | Admin: month, year, status, department, search + totals |
+| GET | /payroll/export | Admin: CSV of the same filter |
+| PUT | /payroll/payments/:id | Admin: adjust a PENDING payslip |
+| PATCH | /payroll/payments/:id/status | Admin: Paid / Pending (employee notified when Paid) |
+| DELETE | /payroll/payments/:id | Admin: PENDING only |
+| GET | /payroll/my/structure, /payroll/my | Employee (own data only) |
+
+Gross = Basic + allowances. Net = Gross - deductions (integer-cent arithmetic, no rounding drift).
+Payslips store a snapshot of the amounts, so later structure edits never change past payslips.
+Payslip PDFs are generated in the browser (jsPDF).
+This is a project-level payroll system, not a legally certified tax or statutory engine.
+
+## Dashboard & Activity API
+| Method | Endpoint | Access |
+|---|---|---|
+| GET | /dashboard/admin | Admin: stats, 5 chart datasets, recent activity (all computed from the database) |
+| GET | /dashboard/employee | Employee: own profile, attendance, tasks, leave, salary, notifications |
+| GET | /dashboard/activity | Admin: audit trail, filter `entityType`, paginated |
+
+Notes: "Absent today" = active employees who have neither checked in nor are on approved leave (0 on a
+weekly-off day). Task "Overdue" is calculated, never stored. The activity log is written by the server
+(employee/department/task/attendance/leave/payroll/announcement actions) and entries expire after 1 year.
+
 ## Frontend routes
 /login, /status, /admin/*, /employee/*
 
-Next: Phase 6B (Leave management).
+Next: Phase 9 (final testing checklist, deployment guide and project documentation).

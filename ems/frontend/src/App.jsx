@@ -7,7 +7,6 @@ import EmployeeLayout from './layouts/EmployeeLayout';
 import Login from './pages/auth/Login';
 import SystemStatus from './pages/SystemStatus';
 import NotFound from './pages/NotFound';
-import ComingSoon from './pages/ComingSoon';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminSettings from './pages/admin/Settings';
 import Employees from './pages/admin/Employees';
@@ -16,6 +15,11 @@ import Departments from './pages/admin/Departments';
 import Tasks from './pages/admin/Tasks';
 import AdminAttendance from './pages/admin/Attendance';
 import MyAttendance from './pages/employee/MyAttendance';
+import AdminLeaves from './pages/admin/Leaves';
+import MyLeaves from './pages/employee/MyLeaves';
+import AdminPayroll from './pages/admin/Payroll';
+import ActivityLog from './pages/admin/ActivityLog';
+import MySalary from './pages/employee/MySalary';
 import AdminNotifications from './pages/admin/Notifications';
 import MyTasks from './pages/employee/MyTasks';
 import EmployeeNotifications from './pages/employee/Notifications';
@@ -48,9 +52,10 @@ export default function App() {
         <Route path="departments" element={<Departments />} />
         <Route path="tasks" element={<Tasks />} />
         <Route path="attendance" element={<AdminAttendance />} />
-        <Route path="leaves" element={<ComingSoon title="Leave Management" phase="Phase 6" />} />
-        <Route path="payroll" element={<ComingSoon title="Payroll" phase="Phase 7" />} />
+        <Route path="leaves" element={<AdminLeaves />} />
+        <Route path="payroll" element={<AdminPayroll />} />
         <Route path="notifications" element={<AdminNotifications />} />
+        <Route path="activity" element={<ActivityLog />} />
         <Route path="settings" element={<AdminSettings />} />
       </Route>
 
@@ -64,8 +69,8 @@ export default function App() {
         <Route path="profile" element={<EmployeeProfile />} />
         <Route path="tasks" element={<MyTasks />} />
         <Route path="attendance" element={<MyAttendance />} />
-        <Route path="leaves" element={<ComingSoon title="My Leaves" phase="Phase 6" />} />
-        <Route path="salary" element={<ComingSoon title="My Salary" phase="Phase 7" />} />
+        <Route path="leaves" element={<MyLeaves />} />
+        <Route path="salary" element={<MySalary />} />
         <Route path="notifications" element={<EmployeeNotifications />} />
       </Route>
 

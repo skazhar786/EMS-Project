@@ -13,6 +13,9 @@ import taskRoutes from './routes/taskRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import announcementRoutes from './routes/announcementRoutes.js';
 import attendanceRoutes from './routes/attendanceRoutes.js';
+import leaveRoutes from './routes/leaveRoutes.js';
+import payrollRoutes from './routes/payrollRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 import { UPLOAD_DIR } from './config/paths.js';
 
 const app = express();
@@ -99,6 +102,9 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/leaves', leaveRoutes);
+app.use('/api/payroll', payrollRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 // More routers are mounted here in later phases.
 
 // ---- Errors (must be last) ------------------------------------------------
